@@ -1,4 +1,4 @@
-package com.waggieetales.composecals.ui.data
+package com.waggieetales.composecals.data
 
 enum class CalculatorOperation(val code: String) {
 

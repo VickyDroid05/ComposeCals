@@ -1,6 +1,7 @@
 package com.waggieetales.composecals
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,11 +28,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.waggieetales.composecals.ui.data.CalculatorMemoryState
-import com.waggieetales.composecals.ui.data.CalculatorOperation
-import com.waggieetales.composecals.ui.data.DisplayModel
+import com.waggieetales.composecals.ui.CalculatorMemoryState
+import com.waggieetales.composecals.ui.DisplayModel
+import com.waggieetales.composecals.data.CalculatorOperation
 import com.waggieetales.composecals.ui.theme.ComposeCalsTheme
 import com.waggieetales.composecals.ui.theme.freeCamFont
+import com.waggieetales.composecals.util.CalculatorUtil
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,9 +54,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
-
 @Composable
 fun CalculatorView(modifier: Modifier = Modifier) {
 
@@ -62,9 +61,11 @@ fun CalculatorView(modifier: Modifier = Modifier) {
         remember {
             mutableStateOf(DisplayModel())
         }
-    var calculatorModel  = CalculatorMemoryState()
+
+    var calculatorModel = CalculatorMemoryState()
 
     Column {
+        toolbarSpace()
         ResultDisplayView(state,calculatorModel )
         ButtonsRow(1, CalculatorOperation.ADD, state, calculatorModel)
         SpacerCommon()
@@ -72,10 +73,12 @@ fun CalculatorView(modifier: Modifier = Modifier) {
         SpacerCommon()
         ButtonsRow(7, CalculatorOperation.MULT, state, calculatorModel)
         SpacerCommon()
-        LastRow(0, CalculatorOperation.EQUAL)
+        LastRow(0, CalculatorOperation.EQUAL, state, calculatorModel)
         SpacerCommon()
     }
 }
+
+
 
 @Composable
 fun SpacerCommon() {
@@ -98,9 +101,23 @@ fun ButtonsRow(
         repeat(4) { index ->
             ElevatedButton(
                 onClick = {
-                    //TODO: To process the value on button click
-                    //data.value.resultValue = index+startValue
-                    //data.value.resultValue = currentValue.toString()
+
+                    if (index == 3) {
+                        //calculatorModel.operation = symbol
+                        calculatorModel.currentInput += symbol.code
+                        data.value = data.value.copy(resultValue = calculatorModel.currentInput)
+                    } else {
+
+                        calculatorModel.currentInput += (index + startValue).toString()
+
+                        //creating immutable object to update the value dependent views
+                        data.value = data.value.copy(resultValue = calculatorModel.currentInput)
+
+                        Log.e(
+                            "MyApp",
+                            "===C : ${calculatorModel.currentInput}, P : ${calculatorModel.previousInput} "
+                        )
+                    }
                 },
                 modifier = Modifier.weight(1f),
             ) {
@@ -115,17 +132,24 @@ fun ButtonsRow(
 }
 
 @Composable
-fun LastRow(startValue: Int, symbol: CalculatorOperation) {
+fun LastRow(
+    startValue: Int,
+    symbol: CalculatorOperation,
+    data: MutableState<DisplayModel>,
+    calculatorModel: CalculatorMemoryState
+) {
     val rowModifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 16.dp)
 
     val rowHorizontalArrangement = Arrangement.spacedBy(16.dp)
 
+    val calculatorUtil = CalculatorUtil()
+
     Row(
         modifier = rowModifier,
         horizontalArrangement = rowHorizontalArrangement
-    )  {
+    ) {
         //Todo: Re-usablity is not working
         //LastRowButtonConfig(rowModifier.weight(1f))
         //LastRowButtonConfig(rowModifier.weight(1f))
@@ -134,28 +158,34 @@ fun LastRow(startValue: Int, symbol: CalculatorOperation) {
 
 
         ElevatedButton(
-            onClick = {   },
+            onClick = { },
             modifier = Modifier.weight(1f)
         ) {
             Text("")
         }
 
         ElevatedButton(
-            onClick = {   },
+            onClick = { },
             modifier = Modifier.weight(1f)
         ) {
             Text("0")
         }
 
         ElevatedButton(
-            onClick = {   },
+            onClick = { },
             modifier = Modifier.weight(1f)
         ) {
             Text("")
         }
 
         ElevatedButton(
-            onClick = {  },
+            onClick = {
+                val result = calculatorUtil.evaluateCals(calculatorModel.currentInput)
+                calculatorModel.currentInput = result.toString()
+
+                //creating immutable object to update the value dependent views
+                data.value = data.value.copy(resultValue = result.toString())
+            },
             modifier = Modifier.weight(1f)
         ) {
             Text("=")
@@ -166,12 +196,12 @@ fun LastRow(startValue: Int, symbol: CalculatorOperation) {
 //TODO: Need to check this why existing modifier is not able to use here
 /*@Composable
 fun LastRowButtonConfig(modifier: Modifier){
-    ElevatedButton(
-        onClick = { *//* handle click *//* },
-        modifier = modifier
-    ) {
-        Text("1")
-    }
+ ElevatedButton(
+ onClick = { *//* handle click *//* },
+ modifier = modifier
+ ) {
+ Text("1")
+ }
 }*/
 
 @Composable
@@ -186,8 +216,7 @@ fun ResultDisplayView(data: MutableState<DisplayModel>, calculatorModel: Calcula
     ) {
         Text(
             //TODO : To set value dynamically
-          //text = data.value.resultValue,
-            text = "123232",
+            text = data.value.resultValue,
             fontSize = 20.sp,
             fontFamily = freeCamFont
         )
@@ -202,8 +231,11 @@ fun CalculatorViewPreview() {
     }
 }
 
-
-
-
+@Composable
+fun toolbarSpace() {
+    SpacerCommon()
+    SpacerCommon()
+    SpacerCommon()
+}
 
 
